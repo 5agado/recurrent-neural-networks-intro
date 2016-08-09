@@ -118,7 +118,7 @@ class RNNNumpy:
             print("Gradient check for parameter %s passed.".format(pname))
 
     # Performs one step of SGD.
-    def numpy_sdg_step(self, x, y, learning_rate):
+    def numpy_sgd_step(self, x, y, learning_rate):
         # Calculate the gradients
         dLdU, dLdV, dLdW = self.bptt(x, y)
         # Change parameters according to gradients and learning rate
