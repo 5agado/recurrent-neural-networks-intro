@@ -148,10 +148,10 @@ class RNNNumpy:
                 # Adjust the learning rate if loss increases
                 if (len(losses) > 1 and losses[-1][1] > losses[-2][1]):
                     learning_rate = learning_rate * 0.5
-                    print("Setting learning rate to {}").format(learning_rate)
+                    print("Setting learning rate to {}".format(learning_rate))
                 sys.stdout.flush()
             # For each training example...
             for i in range(len(y_train)):
                 # One SGD step
-                model.numpy_sdg_step(X_train[i], y_train[i], learning_rate)
+                model.numpy_sgd_step(X_train[i], y_train[i], learning_rate)
                 num_examples_seen += 1
