@@ -90,3 +90,5 @@ ENV/
 
 #PYCHARM
 .idea/
+
+src/drafts/
