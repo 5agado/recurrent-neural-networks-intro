@@ -18,8 +18,11 @@ def tokenize_text(text_lines):
 
 def get_words_mappings(tokenized_sentences, vocabulary_size):
     frequence = nltk.FreqDist(itertools.chain(*tokenized_sentences))
-    vocab = frequence.most_common(vocabulary_size-1)
+    vocab = frequence.most_common(vocabulary_size)
     index_to_word = [x[0] for x in vocab]
+    # Add padding for index 0
+    index_to_word.insert(0, const.PADDING_TOKEN)
+    # Append unknown token (with index = vocabulary size + 1)
     index_to_word.append(const.UNKNOWN_TOKEN)
     word_to_index = dict([(w,i) for i,w in enumerate(index_to_word)])
     return index_to_word, word_to_index
