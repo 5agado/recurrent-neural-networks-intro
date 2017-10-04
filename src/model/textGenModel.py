@@ -11,18 +11,27 @@ class TextGenModel:
     UNKNOWN_TOKEN = "UNKNOWN_TOKEN"
     PAD_TOKEN = "PADDING"
 
-    def __init__(self, model, index_to_word, word_to_index, sent_max_len=30, temperature=1.0):
+    TYPES = {'delimited' : 0, # characterized by start and end sentence tokens
+             'continuous' : 1, # no delimiter tokens
+             }
+
+    def __init__(self, model, index_to_word, word_to_index, sent_max_len=30, temperature=1.0,
+                 use_embeddings=False, model_type=TYPES['delimited']):
         self.model = model
         self.index_to_word = index_to_word
         self.word_to_index = word_to_index
         self.vocabulary_size = len(word_to_index)
-        self.start_token_idx = self.word_to_index[self.SENT_START_TOKEN]
         self.unknown_token_idx = self.word_to_index[self.UNKNOWN_TOKEN]
-        self.end_token_idx = self.word_to_index[self.SENT_END_TOKEN]
         self.pad_token_idx = self.word_to_index[self.PAD_TOKEN]
+
+
+        self.start_token_idx = self.word_to_index.get(self.SENT_START_TOKEN, None)
+        self.end_token_idx = self.word_to_index.get(self.SENT_END_TOKEN, None)
 
         self.sent_max_len = sent_max_len
         self.temperature = temperature
+        self.use_embeddings = use_embeddings
+        self.model_type = model_type
 
     def get_sentence(self, sent_min_len, seed=None, seed_max_len = 10):
         """
@@ -50,53 +59,63 @@ class TextGenModel:
         """
         # if we have some seed text, start with that
         if seed:
-            oh_sentence = self.transform_sentence(seed, max_len)
+            idx_sentence = self.transform_sentence(seed, max_len)
         # TODO start token or random idx?
         # otherwise just use the start token
         else:
-            #rand_idx = np.random.randint(self.vocabulary_size)
-            oh_sentence = np.array([self.one_hot_encode_word(self.start_token_idx)])
-        return oh_sentence
+            if self.start_token_idx:
+                start_token_idx = self.start_token_idx
+            else:
+                start_token_idx = np.random.randint(self.vocabulary_size)
+            idx_sentence = np.array([start_token_idx])
+        # one hot encode sentence
+        if not self.use_embeddings:
+            return self.one_hot_encode_sentence(idx_sentence)
+        else:
+            return idx_sentence
 
-    def _generate_sentence(self, min_len, oh_sentence):
+    def _generate_sentence(self, min_len, seed_sentence):
         """
         Main procedure for sentence generation.
         :param min_len: minimum length acceptable for the generated sentence
-        :param oh_sentence: seed sentence on which to build newly generated text (one-hot encoded)
+        :param seed_sentence: seed sentence on which to build newly generated text (can be either one-hot or word-index encoded)
         :return:
         """
-        # oh_sentence is one-hot encoded, idx_sentence is word index encoded
-        # the former holds all history of words, the latter just the idx for the final sentence
-        oh_sentence = oh_sentence
-        idx_sentence = []
+        # seed_sentence holds all history of words,
+        # res_sentence is instead the final resulting response sentence
+        res_sentence = []
 
         # Repeat until stopping criteria are met
         while True:
             # Index from which we will sample is the one corresponding to index of last
             # word in the fed sentence (RNN next predicted word)
-            current_idx = max(0, len(oh_sentence) - 1)
+            current_idx = max(0, len(seed_sentence) - 1)
 
             # Make predictions and sample index based on returned probabilities
-            words_probs = self._predict_fun(oh_sentence, idx=current_idx)
+            words_probs = self._predict_fun(seed_sentence, idx=current_idx)
             sampled_index = TextGenModel.sample_from_prediction(words_probs, temperature=self.temperature)
-            #sampled_word = self.index_to_word[sampled_index]
 
             # TODO could try some more sampling before throwing away already done work?
             #Skip if sentence is getting too long or we got an unwanted token
-            if len(idx_sentence) >= self.sent_max_len \
+            if len(res_sentence) >= self.sent_max_len \
                     or sampled_index == self.unknown_token_idx \
                     or sampled_index == self.pad_token_idx:
                 return None
 
             # Append result to sentences
-            idx_sentence.append(sampled_index)
-            oh_sentence = np.append(oh_sentence, [self.one_hot_encode_word(sampled_index)], axis=0)
+            res_sentence.append(sampled_index)
+            # append also to seed sentence (just index if with embedding, one-hot encoded if without
+            if self.use_embeddings:
+                seed_sentence = np.append(seed_sentence, [sampled_index], axis=0)
+            else:
+                seed_sentence = np.append(seed_sentence, [self.one_hot_encode_word(sampled_index)], axis=0)
 
             # Return if we get an end token and sentence is long enough
-            if len(idx_sentence) > min_len and sampled_index == self.end_token_idx:
-                return idx_sentence
+            if len(res_sentence) > min_len and (not self.end_token_idx or
+                                                        sampled_index == self.end_token_idx):
+                return res_sentence
 
-        return idx_sentence
+        return res_sentence
 
     def _generate_answer(self, min_len, oh_question):
         # Make predictions and sample index based on probs
@@ -117,6 +136,7 @@ class TextGenModel:
                 if sampled_index == self.end_token_idx and len(idx_sentence) > min_len:
                     return idx_sentence
 
+    # TODO add padding for models who need fixed size input
     def _predict_fun(self, sentence, idx=None):
         """
         Model prediction based on give sentence
@@ -124,7 +144,7 @@ class TextGenModel:
         :param idx: if specified, return only probabilities for such index
         """
         # Give required shape (sample=1, sent_len, voc_size)
-        x = np.reshape(sentence, (1, sentence.shape[0], sentence.shape[1]))
+        x = np.expand_dims(sentence, 0)
         predictions = self.model.predict(x)
         if not idx is None:
             return predictions[0][idx]
@@ -132,35 +152,32 @@ class TextGenModel:
             return predictions
 
     @staticmethod
-    def sample_from_prediction(prediction, temperature=1.0):
+    def sample_from_prediction(predictions, temperature=1.0):
         """
         Sample an index from given prediction (a probability distribution)
-        :param prediction:
+        :param predictions:
         :param temperature:
         :return:
         """
-        p = np.log(prediction) / temperature
+        p = np.log(np.asarray(predictions).astype('float64')) / temperature
         p = np.exp(p) / np.sum(np.exp(p))
         try:
             idx = np.argmax(np.random.multinomial(1, p, 1))
         except ValueError as e:
             logging.debug(e)
-            return np.random.choice(len(prediction), 1, p=prediction)[0]
-        #idx = np.random.choice(len(prediction), 1, p=prediction)[0]
+            return np.random.choice(len(predictions), 1, p=predictions)[0]
         return idx
 
     def transform_sentence(self, sentence, max_len):
         """
         Takes a sentence as string and transform it as required by the model
-        (tokenize, words to index and one-hot encoding)
+        (tokenize, words to index)
         """
         # Tokenize
         words = nltk.word_tokenize(sentence)  # consider adding lower
         # Words to index
         idx_sentence = [self.word_to_index.get(w, self.unknown_token_idx) for w in words[-max_len:]]
-        # one-hot encoding
-        oh_sentence = self.one_hot_encode_sentence(idx_sentence)
-        return oh_sentence
+        return idx_sentence
 
     def one_hot_encode_sentence(self, sentence):
         """
@@ -191,11 +208,17 @@ class TextGenModel:
             sampled_index = np.argmax(samples)
         return sampled_index
 
-    # Converts sentence from word_indexes to string, and tries to fix spacing
-    def pretty_print_sentence(self, sentence, skip_last=False):
-        if skip_last:
+    # prettify raw generated sentence to string
+    def pretty_print_sentence(self, sentence, text_max_len=None):
+        # if model of type delimited, remove end token
+        if self.model_type == self.TYPES['delimited']:
             sentence = sentence[:-1]
+        # if specified, remove unwanted tail text
+        if text_max_len:
+            sentence = sentence[:text_max_len]
+        # convert sentence from word_indexes to string, and tries to fix spacing
         words = [self.index_to_word[word_idx].strip() for word_idx in sentence]
         words = [w if re.match(r"[\,!\?\':\.]+|n'", w) else ' ' + w for w in
                  words]
+        # return joined words (spaced added before)
         return "".join(words).strip()

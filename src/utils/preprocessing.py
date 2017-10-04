@@ -3,7 +3,10 @@ import itertools
 import nltk
 import timeit
 
-import utils.constants as const
+SENT_START_TOKEN = "SENTENCE_START"
+SENT_END_TOKEN = "SENTENCE_END"
+UNKNOWN_TOKEN = "UNKNOWN_TOKEN"
+PADDING_TOKEN = "PADDING"
 
 def tokenize_text(text_lines):
     """
@@ -12,7 +15,7 @@ def tokenize_text(text_lines):
     :return: list of sentences
     """
     sentences = itertools.chain(*[nltk.sent_tokenize(line.lower()) for line in text_lines])
-    sentences = ["{} {} {}".format(const.SENT_START_TOKEN, x, const.SENT_END_TOKEN) for x in sentences]
+    sentences = ["{} {} {}".format(SENT_START_TOKEN, x, SENT_END_TOKEN) for x in sentences]
     tokenized_sentences = [nltk.word_tokenize(sent) for sent in sentences]
     return tokenized_sentences
 
@@ -21,9 +24,9 @@ def get_words_mappings(tokenized_sentences, vocabulary_size):
     vocab = frequence.most_common(vocabulary_size)
     index_to_word = [x[0] for x in vocab]
     # Add padding for index 0
-    index_to_word.insert(0, const.PADDING_TOKEN)
+    index_to_word.insert(0, PADDING_TOKEN)
     # Append unknown token (with index = vocabulary size + 1)
-    index_to_word.append(const.UNKNOWN_TOKEN)
+    index_to_word.append(UNKNOWN_TOKEN)
     word_to_index = dict([(w,i) for i,w in enumerate(index_to_word)])
     return index_to_word, word_to_index
 
@@ -34,4 +37,4 @@ def get_chars_mappings(text):
 
 def replace_unknown_words_in(tokenized_sentences, word_to_index):
     for i, sent in enumerate(tokenized_sentences):
-        tokenized_sentences[i] = [w if w in word_to_index else const.UNKNOWN_TOKEN for w in sent]
+        tokenized_sentences[i] = [w if w in word_to_index else UNKNOWN_TOKEN for w in sent]

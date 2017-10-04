@@ -6,24 +6,28 @@ from keras.layers.core import Activation
 from keras.layers import LSTM
 from keras.layers import TimeDistributed
 
+import pickle
+
 import os
 
 from model.textGenModel import TextGenModel
 
-def load_model_local(model_path, weights_path, index_to_word_path):
-    # Load previously saved model
+def load_model_local(model_path, weights_path, index_to_word_path, **kwargs):
+    # load previously saved model
     with open(model_path, 'r') as f:
         model = model_from_json(f.read())
-    # Load weights into model
+
+    # load weights into model
     model.load_weights(weights_path)
 
-    with open(index_to_word_path) as f:
-        index_to_word = [l.strip() for l in f]
+    # load pickled index to word
+    with open(index_to_word_path, 'rb') as f:
+        index_to_word = pickle.load(f, encoding='utf-8')
 
+    # derive word to index
     word_to_index = dict([(w, i) for i, w in enumerate(index_to_word)])
 
-    model = TextGenModel(model, index_to_word, word_to_index)
-
+    model = TextGenModel(model, index_to_word, word_to_index, **kwargs)
     return model
 
 def get_basic_LSTM_model(hidden_size, vocabulary_size,
