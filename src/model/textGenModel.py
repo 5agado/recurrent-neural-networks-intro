@@ -60,11 +60,11 @@ class TextGenModel:
         # if we have some seed text, start with that
         if seed:
             idx_sentence = self.transform_sentence(seed, max_len)
-        # TODO start token or random idx?
-        # otherwise just use the start token
         else:
+            # if present use start token
             if self.start_token_idx:
                 start_token_idx = self.start_token_idx
+            # otherwise use random token index
             else:
                 start_token_idx = np.random.randint(self.vocabulary_size)
             idx_sentence = np.array([start_token_idx])
@@ -74,6 +74,7 @@ class TextGenModel:
         else:
             return idx_sentence
 
+    # TODO improve on prediction, UNKNOWN handling and timeout
     def _generate_sentence(self, min_len, seed_sentence):
         """
         Main procedure for sentence generation.
@@ -114,8 +115,6 @@ class TextGenModel:
             if len(res_sentence) > min_len and (not self.end_token_idx or
                                                         sampled_index == self.end_token_idx):
                 return res_sentence
-
-        return res_sentence
 
     def _generate_answer(self, min_len, oh_question):
         # Make predictions and sample index based on probs
