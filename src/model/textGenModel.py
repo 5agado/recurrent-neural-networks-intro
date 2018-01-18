@@ -5,14 +5,15 @@ import nltk
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
+
 class TextGenModel:
     SENT_START_TOKEN = "SENTENCE_START"
     SENT_END_TOKEN = "SENTENCE_END"
     UNKNOWN_TOKEN = "UNKNOWN_TOKEN"
     PAD_TOKEN = "PADDING"
 
-    TYPES = {'delimited' : 0, # characterized by start and end sentence tokens
-             'continuous' : 1, # no delimiter tokens
+    TYPES = {'delimited': 0,  # characterized by start and end sentence tokens
+             'continuous': 1,  # no delimiter tokens
              }
 
     def __init__(self, model, index_to_word, word_to_index, sent_max_len=30, temperature=1.0,
@@ -23,7 +24,6 @@ class TextGenModel:
         self.vocabulary_size = len(word_to_index)
         self.unknown_token_idx = self.word_to_index[self.UNKNOWN_TOKEN]
         self.pad_token_idx = self.word_to_index[self.PAD_TOKEN]
-
 
         self.start_token_idx = self.word_to_index.get(self.SENT_START_TOKEN, None)
         self.end_token_idx = self.word_to_index.get(self.SENT_END_TOKEN, None)

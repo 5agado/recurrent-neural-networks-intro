@@ -1,7 +1,7 @@
-import numpy as np
 import itertools
-import nltk
-import timeit
+import collections
+#import nltk
+import spacy
 
 SENT_START_TOKEN = "SENTENCE_START"
 SENT_END_TOKEN = "SENTENCE_END"
@@ -20,8 +20,13 @@ def tokenize_text(text_lines):
     return tokenized_sentences
 
 def get_words_mappings(tokenized_sentences, vocabulary_size):
-    frequence = nltk.FreqDist(itertools.chain(*tokenized_sentences))
-    vocab = frequence.most_common(vocabulary_size)
+    # Using NLTK
+    #frequence = nltk.FreqDist(itertools.chain(*tokenized_sentences))
+    #vocab = frequence.most_common(vocabulary_size)
+
+    # Using basic counter
+    counter = collections.Counter(itertools.chain(*tokenized_sentences))
+    vocab = counter.most_common(vocabulary_size)
     index_to_word = [x[0] for x in vocab]
     # Add padding for index 0
     index_to_word.insert(0, PADDING_TOKEN)
