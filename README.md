@@ -1,7 +1,17 @@
 # Recurrent Neural Networks Intro
 Resources, utils and test code for Recurrent Neural Networks (RNN).
 
-I am working on polishing this code and generalize it even further, such that there is a clear separation between text generation and models training. The idea is that for the latter I can keep experimenting with different techniques and tools, and generate different models, while with the former I can provide a reusable text-generation interface for a multitude of use-cases.
+## Text Generation
+Current main focus and coverage for this repository is around text-generation.
+
+You can find two separate sets of resources, one related to model training and the other related to model serving and consuming (see also [this Medium entry](https://towardsdatascience.com/practical-text-generation-with-tensorflow-serving-3fa5c792605e)).
+
+For training refer to:
+* [RNN with Keras - Text Generation](RNN%20with%20Keras%20-%20Text%20Generation.ipynb)
+* [RNN Text Generation - Advanced](RNN%Text%20Generation%20-%20Advanced.ipynb)
+
+In the `src` folder you will find instead implementation for the **consuming middleware**. It includes a basic class responsible for text pre and post-processing, a procedure for text generation (which builds upon multiple model calls and secondary requirements) and a proxy to handle different models.
+
 
 ## Resources
 * [Karpathy’s article](http://karpathy.github.io/2015/05/21/rnn-effectiveness/)  
