@@ -173,6 +173,7 @@ class TextGenModel:
         (tokenize, words to index)
         """
         # Tokenize
+        # TODO use only spacy
         words = nltk.word_tokenize(sentence)  # consider adding lower
         # Words to index
         idx_sentence = [self.word_to_index.get(w, self.unknown_token_idx) for w in words[-max_len:]]

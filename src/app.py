@@ -18,7 +18,7 @@ def generate_text(model_id):
                             model_id,
                             args.get('model_config', 'standard_config'))
 
-    return text_gen.generate(int(args.get('text_min_length', 10)),
+    return text_gen.generate(int(args.get('min_nb_words', 10)),
                              seed=args.get('seed', None))
 
 

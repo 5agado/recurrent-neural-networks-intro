@@ -1,0 +1,15 @@
+numpy
+pandas
+seaborn
+matplotlib
+scipy
+tensorflow
+spacy
+grpcio
+contract
+protobuf
+grpc
+scikit_learn
+keras
+pickle
+nltk
