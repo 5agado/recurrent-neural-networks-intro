@@ -8,7 +8,7 @@ You can find two separate sets of resources, one related to model training and t
 
 For training refer to:
 * [RNN with Keras - Text Generation](RNN%20with%20Keras%20-%20Text%20Generation.ipynb)
-* [RNN Text Generation - Advanced](RNN%Text%20Generation%20-%20Advanced.ipynb)
+* [RNN Text Generation - Advanced](RNN%20Text%20Generation%20-%20Advanced.ipynb)
 
 In the `src` folder you will find instead implementation for the **consuming middleware**. It includes a basic class responsible for text pre and post-processing, a procedure for text generation (which builds upon multiple model calls and secondary requirements) and a proxy to handle different models.
 
